@@ -1,0 +1,25 @@
+Create a flask app
+One endpoint --- localhost:3000/analyze?algo="bubble"&n=1000&steps=10
+Takes query params: 
+ - The algo to be analyzed (bubblesort,linear search, binary, nested/exponential)
+ - The value of n (elements)
+ - The step value (n_steps)
+ 
+Responds with:
+ - Formatted json  (all the above context including how long it took to run the analisis (Total time))
+ - And a base 64 stream of the image  of the graph
+
+
+
+ example of json
+
+ {
+  "algo":"bubble sort",
+  "items":"1000",
+  "steps":"10",
+  "start_time":3898765,
+  "end_time":24898765,
+  "total_time_ms":3
+  "time_complexity":'0(n)',
+  "path_to_graph":"" // auto downloading featutue
+ }
