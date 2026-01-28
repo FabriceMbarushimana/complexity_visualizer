@@ -422,7 +422,7 @@ The generated graph includes:
 | `binary`  | 1000000           | Very fast, logarithmic growth      |
 | `nested`  | 2000              | Quadratic, avoid large inputs      |
 
-> ⚠️ **Warning**: Using very large values of `n` with O(n²) algorithms may cause long response times or timeouts.
+ Using very large values of `n` with O(n²) algorithms may cause long response times or timeouts.
 
 ---
 
@@ -434,8 +434,6 @@ complexity_visualizer/
 ├── app.py                    # Main Flask application
 ├── factorial.py              # Algorithm implementations
 ├── graphs/                   # Generated graph images
-├── API_documentation.md      # Detailed API documentation
-├── install.md               # Installation guide
 ├── README.md                # This file
 └── .venv/                   # Virtual environment (created during setup)
 ```
@@ -453,20 +451,3 @@ Install all dependencies with:
 pip install flask numpy matplotlib
 ```
 
----
-
-## License
-
-This project is available for educational purposes.
-
----
-
-## Contributing
-
-Feel free to submit issues or pull requests to improve the project.
-
----
-
-## Support
-
-For questions or issues, please refer to the API documentation or check the application logs.
