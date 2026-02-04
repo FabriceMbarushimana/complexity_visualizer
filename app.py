@@ -10,6 +10,14 @@ matplotlib.use('Agg')  # Non-interactive backend for server
 import matplotlib.pyplot as plt
 from flask import Flask, request, jsonify, send_file
 
+# Import database functions
+try:
+    from sqlachemy import init_database, save_analysis_result, get_analysis_by_id, get_all_analyses
+    DB_ENABLED = True
+except ImportError:
+    print("Warning: Database module not available. Running without database support.")
+    DB_ENABLED = False
+
 app = Flask(__name__)
 
 # Directory to save graphs
@@ -228,6 +236,33 @@ def analyze():
         'graph_base64': f'data:image/png;base64,{image_base64}'
     }
     
+    # Save to database if enabled
+    if DB_ENABLED:
+        db_data = {
+            'algo': algo_name,
+            'items': n,
+            'steps': steps,
+            'start_time': start_time_ms,
+            'end_time': end_time_ms,
+            'total_time_ms': total_time_ms,
+            'time_complexity': complexity,
+            'path_to_graph': file_path or ''
+        }
+        db_result = save_analysis_result(db_data)
+        
+        if db_result['status'] == 'success':
+            response['database'] = {
+                'saved': True,
+                'id': db_result['id'],
+                'status_code': db_result['status_code'],
+                'message': db_result['message']
+            }
+        else:
+            response['database'] = {
+                'saved': False,
+                'error': db_result['message']
+            }
+    
     return jsonify(response)
 
 @app.route('/download/<filename>')
@@ -259,12 +294,45 @@ def list_algorithms():
         })
     return jsonify({'algorithms': algorithms})
 
+@app.route('/history')
+def get_history():
+    """Get all saved analysis records from database"""
+    if not DB_ENABLED:
+        return jsonify({'error': 'Database not enabled'}), 503
+    
+    result = get_all_analyses()
+    if result['status'] == 'success':
+        return jsonify(result), result['status_code']
+    else:
+        return jsonify(result), result['status_code']
+
+@app.route('/history/<int:analysis_id>')
+def get_history_by_id(analysis_id):
+    """Get a specific analysis record by ID"""
+    if not DB_ENABLED:
+        return jsonify({'error': 'Database not enabled'}), 503
+    
+    result = get_analysis_by_id(analysis_id)
+    if result['status'] == 'success':
+        return jsonify(result), result['status_code']
+    else:
+        return jsonify(result), result['status_code']
+
 # ==================== RUN SERVER ====================
 
 if __name__ == '__main__':
     print("=" * 50)
     print("Algorithm Complexity Visualizer API")
     print("=" * 50)
+    
+    # Initialize database if enabled
+    if DB_ENABLED:
+        print("Initializing database...")
+        init_database()
+        print("Database ready!")
+    else:
+        print("Database support disabled")
+    
     print("Server running at: http://localhost:3000")
     print("Example: http://localhost:3000/analyze?algo=bubble&n=1000&steps=10")
     print("=" * 50)
