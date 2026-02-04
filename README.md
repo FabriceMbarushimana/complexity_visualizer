@@ -1,6 +1,49 @@
 # Algorithm Complexity Visualizer
 
-A Flask-based API that analyzes and visualizes the time complexity of various algorithms. This tool measures execution times across different input sizes and returns the results along with visual graphs encoded in Base64 format.
+A Flask-based API that analyzes and visualizes the time complexity of various algorithms with **SQLAlchemy database integration**. This tool measures execution times across different input sizes, generates visual graphs, and automatically saves analysis results to a MySQL database.
+
+  
+## Features
+
+- **Algorithm Analysis**: Measure time complexity of Bubble Sort, Linear Search, Binary Search, and Nested Loops
+- **Visual Graphs**: Generate matplotlib graphs showing performance across input sizes
+- **Base64 Encoding**: Graphs returned as base64-encoded images for easy embedding
+- **File Storage**: Automatically save graphs to local filesystem
+- **Database Integration**: Store all analysis results in MySQL database with SQLAlchemy
+- **History Tracking**: Retrieve past analysis results via API endpoints
+- **REST API**: Simple HTTP endpoints for all operations
+
+## Quick Start (3 Steps)
+
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Setup MySQL Database
+```bash
+# Start MySQL/XAMPP, then create database
+mysql -u root -p
+CREATE DATABASE alchemy;
+exit;
+```
+
+### 3. Run the Application
+```bash
+python app.py
+```
+
+Visit: `http://localhost:3000/analyze?algo=bubble&n=1000&steps=10`
+
+## Table of Contents
+- [Installation](#installation)
+- [Database Setup](#database-setup)
+- [API Endpoints](#api-endpoints)
+- [Database Schema](#database-schema)
+- [Usage Examples](#usage-examples)
+- [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
 
   
 ## Installation
@@ -35,56 +78,96 @@ source .venv/bin/activate
 
 ### Step 3: Install Dependencies
 
-With the virtual environment activated, install the required packages:
+With the virtual environment activated, install all required packages:
 
 ```bash
-pip install flask numpy matplotlib
+pip install -r requirements.txt
+```
+
+**Or install manually:**
+```bash
+pip install flask numpy matplotlib sqlalchemy pymysql
 ```
 
 ### Step 4: Verify Installation
 
-Verify that Flask is installed correctly:
+Verify that dependencies are installed correctly:
 
 ```bash
-pip show flask
+pip show flask sqlalchemy
 ```
-
-Or test with Python:
-
-```bash
-python -c "import flask; print(flask.__version__)"
-```
-
-### Running the Application
-
-Once everything is installed, you can run the Flask app with:
-
-```bash
-python app.py
-```
-
-The server will be available at `http://localhost:3000`
 
 ---
 
-## API Documentation
+## Database Setup
+
+### 1. Configure Database Connection
+
+Update database credentials in `sqlachemy.py.py`:
+
+```python
+DB_USER = 'root'
+DB_PASSWORD = ''  # Your MySQL password
+DB_HOST = 'localhost'
+DB_PORT = '3306'
+DB_NAME = 'alchemy'
+```
+
+### 2. Create Database
+
+**Option A: Using MySQL Command Line**
+```bash
+mysql -u root -p
+CREATE DATABASE alchemy;
+exit;
+```
+
+**Option B: Using SQL Script**
+```bash
+mysql -u root -p < create_database.sql
+```
+
+### 3. Initialize Tables
+
+Tables are automatically created when you first run the application. Or manually initialize:
+
+```bash
+python sqlachemy.py.py
+```
+
+### Database Schema
+
+**Table: `algorithm_analysis`**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | INTEGER (PK) | Auto-increment primary key |
+| algo | VARCHAR(100) | Algorithm name (e.g., "Bubble Sort") |
+| items | INTEGER | Number of items processed |
+| steps | INTEGER | Step increment used |
+| start_time | BIGINT | Start timestamp (milliseconds) |
+| end_time | BIGINT | End timestamp (milliseconds) |
+| total_time_ms | INTEGER | Total execution time (milliseconds) |
+| time_complexity | VARCHAR(50) | Complexity notation (e.g., "O(n²)") |
+| path_to_graph | VARCHAR(500) | Path to saved graph image |
+| created_at | VARCHAR(50) | Creation timestamp |
+
+---
+
+---
+
+## API Endpoints
 
 ### Base URL
-
 ```
 http://localhost:3000
 ```
 
-### Endpoints
+### 1. Home - GET `/`
 
-#### 1. Home
+Returns API information and available algorithms.
 
-**GET** `/`
-
-Returns basic API information and available options.
-
-**Response Example:**
-
+**Response:**
 ```json
 {
   "available_algorithms": ["bubble", "linear", "binary", "nested"],
@@ -92,337 +175,252 @@ Returns basic API information and available options.
 }
 ```
 
----
+### 2. Analyze Algorithm - GET `/analyze`
 
-#### 2. Analyze Algorithm
+Analyzes algorithm time complexity and **automatically saves to database**.
 
-**GET** `/analyze`
+**Parameters:**
+- `algo` (required): Algorithm name (`bubble`, `linear`, `binary`, `nested`)
+- `n` (required): Maximum input size (positive integer)
+- `steps` (required): Step increment (positive integer)
 
-Analyzes the time complexity of a specified algorithm with given parameters.
-
-**Query Parameters:**
-
-| Parameter | Type    | Required | Description                                    |
-|-----------|---------|----------|------------------------------------------------|
-| `algo`    | string  | Yes      | Algorithm key: `bubble`, `linear`, `binary`, `nested` |
-| `n`       | integer | Yes      | Maximum input size (must be positive)          |
-| `steps`   | integer | Yes      | Step increment (must be positive, ≤ n)         |
-
-**Available Algorithms:**
-
-| Key      | Algorithm Name | Time Complexity |
-|----------|----------------|-----------------|
-| `bubble` | Bubble Sort    | O(n²)           |
-| `linear` | Linear Search  | O(n)            |
-| `binary` | Binary Search  | O(log n)        |
-| `nested` | Nested Loops   | O(n²)           |
-
-**Request Example:**
-
-```
-GET /analyze?algo=bubble&n=1000&steps=10
+**Example:**
+```bash
+GET http://localhost:3000/analyze?algo=bubble&n=1000&steps=10
 ```
 
-This will:
-- Run Bubble Sort with input sizes: 10, 20, 30, ..., 1000
-- Measure execution time for each input size
-- Generate a time complexity graph
-- Return all data in JSON format
-
-**Response Example:**
-
+**Response:**
 ```json
 {
   "algo": "Bubble Sort",
   "items": "1000",
   "steps": "10",
-  "start_time": 1706450400000,
-  "end_time": 1706450403500,
-  "total_time_ms": 3500,
+  "start_time": 1738627200000,
+  "end_time": 1738627203000,
+  "total_time_ms": 3000,
   "time_complexity": "O(n²)",
   "data_points": 100,
-  "path_to_graph": "C:/Users/.../graphs/bubble_sort_20260128_143025_a1b2c3d4.png",
-  "download_url": "/download/bubble_sort_20260128_143025_a1b2c3d4.png",
-  "graph_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA..."
+  "path_to_graph": "/path/to/graph.png",
+  "download_url": "/download/bubble_sort_20240204_123456.png",
+  "graph_base64": "data:image/png;base64,iVBORw0KG...",
+  "database": {
+    "saved": true,
+    "id": 1,
+    "status_code": 201,
+    "message": "Algorithm analysis saved successfully with ID: 1"
+  }
 }
 ```
 
-**Response Fields:**
+### 3. Get All History - GET `/history`
 
-| Field            | Type    | Description                                              |
-|------------------|---------|----------------------------------------------------------|
-| `algo`           | string  | Full name of the analyzed algorithm                      |
-| `items`          | string  | Maximum input size (n value)                             |
-| `steps`          | string  | Step increment used                                      |
-| `start_time`     | integer | Unix timestamp in milliseconds when analysis started     |
-| `end_time`       | integer | Unix timestamp in milliseconds when analysis completed   |
-| `total_time_ms`  | integer | Total analysis duration in milliseconds                  |
-| `time_complexity`| string  | Theoretical time complexity (Big O notation)             |
-| `data_points`    | integer | Number of data points collected                          |
-| `path_to_graph`  | string  | Absolute file path where the graph image was saved       |
-| `download_url`   | string  | URL endpoint to download the saved graph                 |
-| `graph_base64`   | string  | Base64 encoded PNG image of the complexity graph         |
+Retrieves all saved analysis records from the database.
 
-**Error Responses:**
-
-**Missing Algorithm Parameter (400)**
-```json
-{
-  "error": "Missing required parameter: algo"
-}
+**Example:**
+```bash
+GET http://localhost:3000/history
 ```
 
-**Unknown Algorithm (400)**
+**Response:**
 ```json
 {
-  "error": "Unknown algorithm: quicksort",
-  "available_algorithms": ["bubble", "linear", "binary", "nested"]
-}
-```
-
-**Invalid N Parameter (400)**
-```json
-{
-  "error": "Missing or invalid parameter: n (must be positive integer)"
-}
-```
-
-**Invalid Steps Parameter (400)**
-```json
-{
-  "error": "Missing or invalid parameter: steps (must be positive integer)"
-}
-```
-
-**Steps Greater Than N (400)**
-```json
-{
-  "error": "steps cannot be greater than n"
-}
-```
-
----
-
-#### 3. List Algorithms
-
-**GET** `/algorithms`
-
-Returns a list of all available algorithms with their details.
-
-**Response Example:**
-
-```json
-{
-  "algorithms": [
+  "status": "success",
+  "status_code": 200,
+  "count": 5,
+  "data": [
     {
-      "key": "bubble",
-      "name": "Bubble Sort",
-      "complexity": "O(n²)"
-    },
-    {
-      "key": "linear",
-      "name": "Linear Search",
-      "complexity": "O(n)"
-    },
-    {
-      "key": "binary",
-      "name": "Binary Search",
-      "complexity": "O(log n)"
-    },
-    {
-      "key": "nested",
-      "name": "Nested Loops",
-      "complexity": "O(n²)"
+      "id": 1,
+      "algo": "Bubble Sort",
+      "items": 1000,
+      "steps": 10,
+      "total_time_ms": 3,
+      "time_complexity": "O(n²)",
+      "created_at": "2024-02-04T12:34:56.789"
     }
   ]
 }
 ```
 
----
+### 4. Get Specific Record - GET `/history/<id>`
 
-#### 4. Download Graph
+Retrieves a specific analysis record by ID.
 
-**GET** `/download/<filename>`
-
-Downloads a saved graph image directly.
-
-**Request Example:**
-
-```
-GET /download/bubble_sort_20260128_143025_a1b2c3d4.png
+**Example:**
+```bash
+GET http://localhost:3000/history/1
 ```
 
 **Response:**
-
-Returns the PNG file as a downloadable attachment.
-
-**Error Response (404):**
-
 ```json
 {
-  "error": "File not found"
+  "status": "success",
+  "status_code": 200,
+  "data": {
+    "id": 1,
+    "algo": "Bubble Sort",
+    "items": 1000,
+    "steps": 10,
+    "start_time": 36458241,
+    "end_time": 239759234,
+    "total_time_ms": 3,
+    "time_complexity": "O(n²)",
+    "path_to_graph": "/graphs/bubble_sort.png",
+    "created_at": "2024-02-04T12:34:56.789"
+  }
 }
 ```
 
----
+### 5. List Algorithms - GET `/algorithms`
 
-#### 5. List Saved Graphs
+Lists all available algorithms with their complexity notations.
 
-**GET** `/graphs`
+**Response:**
+```json
+{
+  "algorithms": [
+    {"key": "bubble", "name": "Bubble Sort", "complexity": "O(n²)"},
+    {"key": "linear", "name": "Linear Search", "complexity": "O(n)"},
+    {"key": "binary", "name": "Binary Search", "complexity": "O(log n)"},
+    {"key": "nested", "name": "Nested Loops", "complexity": "O(n²)"}
+  ]
+}
+```
 
-Returns a list of all saved graph images.
+### 6. List Saved Graphs - GET `/graphs`
 
-**Response Example:**
+Lists all saved graph images.
 
+**Response:**
 ```json
 {
   "graphs": [
     {
-      "filename": "bubble_sort_20260128_143025_a1b2c3d4.png",
-      "download_url": "/download/bubble_sort_20260128_143025_a1b2c3d4.png"
-    },
-    {
-      "filename": "linear_search_20260128_143100_e5f6g7h8.png",
-      "download_url": "/download/linear_search_20260128_143100_e5f6g7h8.png"
+      "filename": "bubble_sort_20240204_123456.png",
+      "download_url": "/download/bubble_sort_20240204_123456.png"
     }
   ],
-  "total": 2
+  "total": 1
 }
+```
+
+### 7. Download Graph - GET `/download/<filename>`
+
+Downloads a specific saved graph image.
+
+**Example:**
+```bash
+GET http://localhost:3000/download/bubble_sort_20240204_123456.png
 ```
 
 ---
 
 ## Usage Examples
 
-### Using cURL
-
-**Analyze Bubble Sort:**
+### Example 1: Run Flask App with Auto-Save
 ```bash
-curl "http://localhost:3000/analyze?algo=bubble&n=1000&steps=10"
+python app.py
+```
+Visit: `http://localhost:3000/analyze?algo=bubble&n=1000&steps=10`
+
+### Example 2: Test Database Directly
+```bash
+python test_database.py
+```
+This will test connection, create tables, save data, and retrieve records.
+
+### Example 3: Initialize Database Tables
+```bash
+python sqlachemy.py.py
 ```
 
-**Analyze Linear Search:**
-```bash
-curl "http://localhost:3000/analyze?algo=linear&n=5000&steps=100"
-```
-
-**Analyze Binary Search:**
-```bash
-curl "http://localhost:3000/analyze?algo=binary&n=10000&steps=500"
-```
-
-**Analyze Nested Loops:**
-```bash
-curl "http://localhost:3000/analyze?algo=nested&n=500&steps=10"
-```
-
-### Using Python
-
+### Example 4: Using Python Code
 ```python
-import requests
-import base64
+from sqlachemy import save_analysis_result, get_analysis_by_id
 
-# Make API request
-response = requests.get(
-    'http://localhost:3000/analyze',
-    params={'algo': 'bubble', 'n': 1000, 'steps': 10}
-)
+# Save analysis result
+data = {
+    "algo": "Bubble Sort",
+    "items": 1000,
+    "steps": 10,
+    "start_time": 36458241,
+    "end_time": 239759234,
+    "total_time_ms": 3,
+    "time_complexity": "O(n²)",
+    "path_to_graph": "/graphs/bubble_sort.png"
+}
 
-data = response.json()
+result = save_analysis_result(data)
+print(f"Saved with ID: {result['id']}")
 
-# Print results
-print(f"Algorithm: {data['algo']}")
-print(f"Time Complexity: {data['time_complexity']}")
-print(f"Total Analysis Time: {data['total_time_ms']}ms")
-
-# Save the graph image
-if 'graph_base64' in data:
-    # Remove the data URL prefix
-    image_data = data['graph_base64'].split(',')[1]
-    with open('complexity_graph.png', 'wb') as f:
-        f.write(base64.b64decode(image_data))
-    print("Graph saved as complexity_graph.png")
+# Retrieve saved record
+record = get_analysis_by_id(result['id'])
+print(record['data'])
 ```
 
-### Using JavaScript (Browser)
+### Example 5: cURL Requests
+```bash
+# Analyze bubble sort
+curl "http://localhost:3000/analyze?algo=bubble&n=1000&steps=10"
 
-```javascript
-fetch('http://localhost:3000/analyze?algo=bubble&n=1000&steps=10')
-  .then(response => response.json())
-  .then(data => {
-    console.log('Algorithm:', data.algo);
-    console.log('Time Complexity:', data.time_complexity);
-    console.log('Total Time:', data.total_time_ms, 'ms');
-    
-    // Display the graph in an img element
-    const img = document.createElement('img');
-    img.src = data.graph_base64;
-    document.body.appendChild(img);
-  });
+# Get all history
+curl "http://localhost:3000/history"
+
+# Get specific record
+curl "http://localhost:3000/history/1"
+
+# List algorithms
+curl "http://localhost:3000/algorithms"
 ```
 
 ---
 
-## How It Works
+## Testing
 
-### Analysis Process
+### Test Database Functionality
+```bash
+python test_database.py
+```
 
-1. **Parameter Validation**: The API validates all query parameters
-2. **Input Size Generation**: Creates a list of input sizes from `steps` to `n` with `steps` increment
-3. **Time Measurement**: For each input size:
-   - Records start time
-   - Executes the algorithm
-   - Records end time
-   - Calculates execution duration
-4. **Graph Generation**: Creates a matplotlib plot showing input size vs. execution time
-5. **Response Building**: Packages all data including the Base64-encoded graph
+**Expected Output:**
+```
+======================================================================
+Testing Algorithm Analysis Database
+======================================================================
 
-### Algorithm Implementations
+[STEP 1] Testing database connection...
+✅ Connection successful!
 
-#### Bubble Sort - O(n²)
-- Compares adjacent elements and swaps if out of order
-- Repeats until no swaps needed
-- Worst case: n² comparisons
+[STEP 2] Initializing database tables...
+✅ Tables created successfully!
 
-#### Linear Search - O(n)
-- Iterates through each element sequentially
-- Returns when target is found
-- Worst case: n iterations
+[STEP 3] Saving algorithm analysis result...
+✅ Data saved successfully!
+   Status Code: 201
+   Record ID: 1
+   Message: Algorithm analysis saved successfully with ID: 1
 
-#### Binary Search - O(log n)
-- Works on sorted arrays
-- Divides search space in half each iteration
-- Very efficient for large datasets
+[STEP 4] Retrieving saved record (ID: 1)...
+✅ Record retrieved successfully!
 
-#### Nested Loops - O(n²)
-- Two nested loops, each iterating n times
-- Demonstrates quadratic time complexity
-- Similar behavior to matrix operations
+[STEP 5] Retrieving all records...
+✅ Retrieved 1 record(s)
 
----
+======================================================================
+Testing complete!
+======================================================================
+```
 
-## Graph Output
+### Test Flask Endpoints
+```bash
+# Start the server
+python app.py
 
-The generated graph includes:
-- **X-axis**: Input size (n)
-- **Y-axis**: Running time in seconds
-- **Title**: Algorithm name and theoretical complexity
-- **Data Points**: Actual measured times (connected by lines)
-- **Shaded Area**: Visual representation of time growth
-- **Statistics Box**: Average and maximum execution times
-
----
-
-## Performance Considerations
-
-| Algorithm | Recommended Max N | Notes                              |
-|-----------|-------------------|------------------------------------|
-| `bubble`  | 5000              | Very slow for large inputs         |
-| `linear`  | 100000            | Scales linearly                    |
-| `binary`  | 1000000           | Very fast, logarithmic growth      |
-| `nested`  | 2000              | Quadratic, avoid large inputs      |
-
- Using very large values of `n` with O(n²) algorithms may cause long response times or timeouts.
+# In another terminal, test endpoints
+curl http://localhost:3000/
+curl "http://localhost:3000/analyze?algo=bubble&n=100&steps=10"
+curl http://localhost:3000/history
+curl http://localhost:3000/algorithms
+```
 
 ---
 
@@ -431,23 +429,225 @@ The generated graph includes:
 ```
 complexity_visualizer/
 │
-├── app.py                    # Main Flask application
-├── factorial.py              # Algorithm implementations
-├── graphs/                   # Generated graph images
-├── README.md                # This file
-└── .venv/                   # Virtual environment (created during setup)
+├── app.py                    # Main Flask application with database integration
+├── sqlachemy.py.py          # Database module (models & functions)
+├── factorial.py             # Factorial algorithm example
+├── test_database.py         # Database testing script
+│
+├── requirements.txt         # Python dependencies
+├── create_database.sql      # SQL setup script
+│
+├── README.md               # This comprehensive guide
+├── DATABASE_GUIDE.md       # Detailed database documentation
+├── QUICKSTART.md          # Quick reference guide
+├── TASK_COMPLETION.md     # Task completion report
+│
+├── graphs/                 # Saved graph images
+│   └── *.png
+│
+└── .venv/                  # Virtual environment (created by you)
 ```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `app.py` | Flask API with algorithm analysis & database integration |
+| `sqlachemy.py.py` | SQLAlchemy models, database functions, table definitions |
+| `test_database.py` | Complete test suite for database operations |
+| `requirements.txt` | All Python dependencies (Flask, SQLAlchemy, PyMySQL, etc.) |
+| `create_database.sql` | SQL script to manually create database & tables |
+
+---
+
+## Available Algorithms
+
+| Algorithm | Key | Time Complexity | Description |
+|-----------|-----|-----------------|-------------|
+| **Bubble Sort** | `bubble` | O(n²) | Classic sorting algorithm with nested loops |
+| **Linear Search** | `linear` | O(n) | Sequential search through array |
+| **Binary Search** | `binary` | O(log n) | Efficient search on sorted array |
+| **Nested Loops** | `nested` | O(n²) | Demonstration of quadratic complexity |
+
+---
+
+## Database Functions
+
+### Core Functions in `sqlachemy.py.py`
+
+```python
+# Initialize database and create tables
+init_database()
+
+# Save analysis result (returns status code & ID)
+save_analysis_result(data)
+
+# Retrieve specific record by ID
+get_analysis_by_id(analysis_id)
+
+# Retrieve all records
+get_all_analyses()
+
+# Test database connection
+test_connection()
+```
+
+### Success Response Format
+```json
+{
+  "status": "success",
+  "status_code": 201,
+  "id": 1,
+  "message": "Algorithm analysis saved successfully with ID: 1",
+  "data": {
+    "id": 1,
+    "algo": "Bubble Sort",
+    "items": 1000,
+    "steps": 10,
+    "start_time": 36458241,
+    "end_time": 239759234,
+    "total_time_ms": 3,
+    "time_complexity": "O(n²)",
+    "path_to_graph": "/graphs/bubble_sort.png",
+    "created_at": "2024-02-04T12:34:56.789"
+  }
+}
+```
+
+---
+
+## Troubleshooting
+
+### Database Connection Failed
+**Problem:** `Connection failed: Can't connect to MySQL server`
+
+**Solution:**
+- Ensure MySQL/XAMPP is running
+- Verify database credentials in `sqlachemy.py.py`
+- Check if database exists: `CREATE DATABASE alchemy;`
+- Test connection: `python sqlachemy.py.py`
+
+### Import Error: No module named 'pymysql'
+**Problem:** Missing PyMySQL dependency
+
+**Solution:**
+```bash
+pip install pymysql
+```
+
+### Import Error: No module named 'sqlalchemy'
+**Problem:** Missing SQLAlchemy dependency
+
+**Solution:**
+```bash
+pip install sqlalchemy
+```
+
+### Table Already Exists
+**Problem:** `Table 'algorithm_analysis' already exists`
+
+**Solution:**
+- This is normal! Tables are created automatically
+- Safe to ignore - tables won't be duplicated
+
+### Database Not Enabled
+**Problem:** `{"error": "Database not enabled"}`
+
+**Solution:**
+- Ensure `sqlachemy.py.py` is in the same directory as `app.py`
+- Check for import errors in terminal output
+- Install missing dependencies: `pip install -r requirements.txt`
+
+### Port Already in Use
+**Problem:** `Address already in use`
+
+**Solution:**
+```bash
+# Kill process on port 3000
+# Windows:
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Linux/Mac:
+lsof -ti:3000 | xargs kill -9
+```
+
+---
+
+## Status Codes
+
+| Code | Meaning | Usage |
+|------|---------|-------|
+| `200` | Success | GET requests (retrieve data) |
+| `201` | Created | POST/save operations |
+| `400` | Bad Request | Invalid parameters |
+| `404` | Not Found | Record/resource doesn't exist |
+| `500` | Server Error | Database or server issues |
+| `503` | Service Unavailable | Database disabled |
 
 ---
 
 ## Dependencies
 
-- **Flask** - Web framework for the API
-- **NumPy** - Numerical operations
-- **Matplotlib** - Graph generation
-
-Install all dependencies with:
-```bash
-pip install flask numpy matplotlib
+```txt
+Flask==3.0.0          # Web framework
+numpy==1.24.3         # Numerical operations
+matplotlib==3.7.2     # Graph generation
+SQLAlchemy==2.0.23    # Database ORM
+PyMySQL==1.1.0        # MySQL connector
 ```
 
+Install all at once:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Task Completion Summary
+
+This project successfully implements:
+
+1. **Database Table**: Created `algorithm_analysis` table with proper schema
+2. **Data Persistence**: Automatically saves all analysis results to database
+3. **Success Response**: Returns status code 201 with saved instance ID
+4. **History Tracking**: API endpoints to retrieve past analyses
+5. **Complete Integration**: Flask app fully integrated with SQLAlchemy
+6. **Comprehensive Testing**: Test scripts for all functionality
+7. **Full Documentation**: Multiple guide documents for easy reference
+
+---
+
+## Running the Application
+
+### Start the Server
+```bash
+python app.py
+```
+
+**Output:**
+```
+==================================================
+Algorithm Complexity Visualizer API
+==================================================
+Initializing database...
+✓ Database tables created successfully!
+Database ready!
+Server running at: http://localhost:3000
+Example: http://localhost:3000/analyze?algo=bubble&n=1000&steps=10
+==================================================
+ * Running on http://0.0.0.0:3000
+```
+
+### Make Your First Request
+```bash
+curl "http://localhost:3000/analyze?algo=bubble&n=1000&steps=10"
+```
+
+The response will include:
+- Algorithm analysis results
+- Generated graph (base64 encoded)
+- Database save confirmation with ID
+- Download URL for graph image
+ 
+ 
